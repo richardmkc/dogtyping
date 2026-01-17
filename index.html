@@ -114,7 +114,7 @@
 
         #labradoodleImage.show {
             opacity: 1;
-            transform: translate(-50%, -50%) scale(1.05);
+            transform: translate(-50%, -50%) scale(1.5);
         }
 
         /* Letter Tally at Bottom */
@@ -141,9 +141,27 @@
             text-transform: uppercase;
         }
 
-        /* Hide audio element */
-        #barkSound {
+        /* Hide audio elements */
+        #barkSound, #mooSound {
             display: none;
+        }
+
+        /* Cow countdown counter - bottom left */
+        #cowCountdown {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            font-size: 2rem;
+            font-weight: bold;
+            color: #ffffff;
+            font-family: 'Courier New', monospace;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+        }
+
+        #cowCountdown.show {
+            opacity: 1;
         }
     </style>
 </head>
@@ -171,6 +189,13 @@
             <source src="audio/bark.mp3" type="audio/mpeg">
             <source src="audio/bark.wav" type="audio/wav">
         </audio>
+        <audio id="mooSound" preload="auto">
+            <!-- Cow sound file -->
+            <source src="audio/moo.mp3.m4a" type="audio/mp4">
+            <source src="audio/moo.mp3" type="audio/mpeg">
+            <source src="audio/moo.wav" type="audio/wav">
+        </audio>
+        <div id="cowCountdown"></div>
         <div id="letterTally">
             <div class="tally-label">Typed Letters</div>
             <div id="tallyContent"></div>
@@ -208,6 +233,8 @@
         const pressedKeys = new Set(); // Track which keys are currently pressed
         let dogPhotoCount = 0; // Counter for dog photos
         const COW_INTERVAL = 20; // Show cow every 20 dog photos
+        let isCowShowing = false; // Track if cow is currently showing
+        let cowHideTimeout = null; // Timeout for hiding cow after 3 seconds
 
         // DOM elements
         const startupScreen = document.getElementById('startupScreen');
@@ -217,6 +244,8 @@
         const labradoodleImage = document.getElementById('labradoodleImage');
         const tallyContent = document.getElementById('tallyContent');
         const barkSound = document.getElementById('barkSound');
+        const mooSound = document.getElementById('mooSound');
+        const cowCountdown = document.getElementById('cowCountdown');
 
         // Filter input to only A-Z characters
         function filterToLettersOnly(text) {
@@ -312,6 +341,16 @@
             }
         }
 
+        // Play cow moo sound from audio file
+        function playMooSound() {
+            if (mooSound) {
+                mooSound.currentTime = 0; // Reset to start
+                mooSound.play().catch(err => {
+                    console.log('Cow sound not available');
+                });
+            }
+        }
+
         // Fallback: Generate a simple bark sound using Web Audio API if audio file is missing
         function generateFallbackBarkSound() {
             try {
@@ -339,31 +378,70 @@
             }
         }
 
-        // Show cow photo (every 20th photo)
+        // Show cow photo (every 20th photo) - lasts minimum 3 seconds
         function showCow() {
+            isCowShowing = true;
             labradoodleImage.src = getRandomCowImage();
             labradoodleImage.classList.add('show');
-            // Play moo sound or reuse bark sound - you can add a cow sound if desired
-            playBarkSound(); // Using bark sound for now, but you can add a moo sound
+            playMooSound(); // Play cow moo sound
+            
+            // Clear any existing hide timeout
+            if (cowHideTimeout) {
+                clearTimeout(cowHideTimeout);
+            }
+            
+            // Set timeout to allow hiding after 3 seconds minimum
+            cowHideTimeout = setTimeout(() => {
+                // After 3 seconds, allow hiding
+                isCowShowing = false;
+                // Only hide if no keys are being pressed
+                if (pressedKeys.size === 0) {
+                    labradoodleImage.classList.remove('show');
+                }
+            }, 3000); // 3 seconds minimum
         }
 
         // Show black dog photo
         function showBlackDog() {
             dogPhotoCount++;
             
+            // Update cow countdown
+            updateCowCountdown();
+            
             // Check if it's time to show a cow (every 20th photo)
             if (dogPhotoCount % COW_INTERVAL === 0) {
                 showCow();
             } else {
-                labradoodleImage.src = getRandomBlackDogImage();
-                labradoodleImage.classList.add('show');
-                playBarkSound();
+                // Only show dog if cow isn't showing
+                if (!isCowShowing) {
+                    labradoodleImage.src = getRandomBlackDogImage();
+                    labradoodleImage.classList.add('show');
+                    playBarkSound();
+                }
             }
         }
 
-        // Hide black dog photo
+        // Hide black dog photo (respects cow 3-second minimum)
         function hideBlackDog() {
+            // Don't hide if cow is showing and hasn't been up for 3 seconds yet
+            if (isCowShowing) {
+                return;
+            }
             labradoodleImage.classList.remove('show');
+        }
+
+        // Update cow countdown display (shows when < 5 photos to cow)
+        function updateCowCountdown() {
+            const remainder = dogPhotoCount % COW_INTERVAL;
+            const lettersUntilCow = remainder === 0 ? COW_INTERVAL : COW_INTERVAL - remainder;
+            
+            // Show countdown when 5 or fewer photos until cow (and not currently showing cow)
+            if (lettersUntilCow <= 5 && lettersUntilCow > 0 && !isCowShowing) {
+                cowCountdown.textContent = `${lettersUntilCow}`;
+                cowCountdown.classList.add('show');
+            } else {
+                cowCountdown.classList.remove('show');
+            }
         }
 
         // Update letter tally
@@ -405,9 +483,12 @@
             if (pressedKeys.has(key)) {
                 pressedKeys.delete(key);
                 
-                // Hide image only if no keys are being pressed
-                if (pressedKeys.size === 0) {
+                // Hide image only if no keys are being pressed and cow isn't showing
+                if (pressedKeys.size === 0 && !isCowShowing) {
                     hideBlackDog();
+                } else if (pressedKeys.size === 0 && isCowShowing) {
+                    // If cow is showing, let the 3-second timer handle hiding
+                    // The timeout will check pressedKeys.size when it fires
                 }
             }
         }
@@ -442,5 +523,4 @@
 </body>
 </html>
 
-
- 
+   
