@@ -163,6 +163,54 @@
         #cowCountdown.show {
             opacity: 1;
         }
+
+        /* Mobile input container - bottom center */
+        #mobileInputContainer {
+            position: fixed;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            max-width: 300px;
+            display: none; /* Hidden by default, shown on mobile */
+        }
+
+        @media (max-width: 768px) {
+            #mobileInputContainer {
+                display: block;
+            }
+            /* Adjust tally position on mobile to make room for input */
+            #letterTally {
+                bottom: 140px;
+            }
+        }
+
+        #mobileLetterInput {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid #ffffff;
+            color: #ffffff;
+            font-size: 1.5rem;
+            padding: 1rem;
+            text-align: center;
+            border-radius: 10px;
+            outline: none;
+            font-family: 'Courier New', monospace;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+        }
+
+        #mobileLetterInput::placeholder {
+            color: #888888;
+            font-size: 1rem;
+            letter-spacing: 1px;
+        }
+
+        #mobileLetterInput:focus {
+            border-color: #00ff41;
+            box-shadow: 0 0 20px rgba(0, 255, 65, 0.5);
+            background: rgba(255, 255, 255, 0.15);
+        }
     </style>
 </head>
 <body>
@@ -199,6 +247,16 @@
         <div id="letterTally">
             <div class="tally-label">Typed Letters</div>
             <div id="tallyContent"></div>
+        </div>
+        <!-- Mobile input for typing letters -->
+        <div id="mobileInputContainer">
+            <input 
+                type="text" 
+                id="mobileLetterInput" 
+                placeholder="Type letters here..."
+                autocomplete="off"
+                maxlength="1"
+            />
         </div>
     </div>
 
@@ -246,6 +304,7 @@
         const barkSound = document.getElementById('barkSound');
         const mooSound = document.getElementById('mooSound');
         const cowCountdown = document.getElementById('cowCountdown');
+        const mobileLetterInput = document.getElementById('mobileLetterInput');
 
         // Filter input to only A-Z characters
         function filterToLettersOnly(text) {
@@ -515,6 +574,61 @@
             // Set up keyboard listeners
             document.addEventListener('keydown', handleKeyDown);
             document.addEventListener('keyup', handleKeyUp);
+
+            // Set up mobile input handler
+            setupMobileInput();
+        }
+
+        // Setup mobile input for letter submission
+        function setupMobileInput() {
+            // Filter input to only A-Z letters
+            mobileLetterInput.addEventListener('input', (e) => {
+                const value = mobileLetterInput.value;
+                const filtered = filterToLettersOnly(value);
+                
+                if (filtered.length > 0) {
+                    const letter = filtered.charAt(0).toLowerCase();
+                    
+                    // Check if the letter matches any letter in the recorded word
+                    const recordedWordLower = recordedWord.toLowerCase();
+                    if (recordedWordLower.includes(letter)) {
+                        // Trigger showBlackDog for matching letter
+                        showBlackDog();
+                    }
+                    
+                    // Always update tally
+                    updateTally(letter.toUpperCase());
+                    
+                    // Clear input after processing
+                    mobileLetterInput.value = '';
+                    
+                    // Show photo briefly for mobile (1 second if not cow)
+                    if (!isCowShowing) {
+                        setTimeout(() => {
+                            if (pressedKeys.size === 0 && !isCowShowing) {
+                                hideBlackDog();
+                            }
+                        }, 1000);
+                    }
+                } else {
+                    mobileLetterInput.value = '';
+                }
+            });
+
+            // Prevent non-letter keys in mobile input
+            mobileLetterInput.addEventListener('keydown', (e) => {
+                // Allow: backspace, delete, etc.
+                const allowedKeys = ['Backspace', 'Delete', 'Tab'];
+                if (allowedKeys.includes(e.key)) {
+                    return;
+                }
+                
+                // Only allow A-Z letters
+                if (!/^[A-Za-z]$/.test(e.key)) {
+                    e.preventDefault();
+                    return false;
+                }
+            });
         }
 
         // Initialize
