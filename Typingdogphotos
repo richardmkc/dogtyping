@@ -1,0 +1,126 @@
+# Dog Typing Photo App - Plan
+
+## Concept Overview
+An interactive typing app where:
+- User types a word at the beginning (e.g., "DOG", "HAPPY", "PUPPY")
+- Every letter typed displays a dog photo
+- The dog photos are selected based on the letters in the initial word
+
+## Design Approaches (Choose One)
+
+### Approach 1: Letter-to-Photo Mapping
+- Each letter in the initial word maps to a specific dog photo
+- Example: Word "DOG" → D maps to photo 1, O maps to photo 2, G maps to photo 3
+- When user types "A", it shows the photo for "D" (first letter)
+- When user types "B", it shows the photo for "O" (second letter)
+- Cycles through letters of the word
+
+### Approach 2: Random Selection from Letter Pool
+- Each letter in the initial word has multiple associated dog photos
+- When typing, randomly pick from photos associated with letters in the word
+- Example: Word "DOG" → typing could show any dog photo mapped to D, O, or G
+
+### Approach 3: Sequential Cycle
+- User types initial word "DOG"
+- Every letter typed cycles through photos: D-photo → O-photo → G-photo → D-photo...
+- Letter position in typed sequence determines which letter from word to use
+
+### Approach 4: Letter Position Based
+- Initial word determines available photos
+- Each letter typed shows photo based on position: 1st typed letter = 1st word letter, 2nd = 2nd, etc.
+- Wraps around if word is shorter than typed sequence
+
+## Recommended Approach: **Approach 4 (Letter Position Based)**
+
+This is the most intuitive and fun:
+- Type word "PUPPY" → photos cycle: P → U → P → P → Y → P → U → P...
+- Simple to understand and implement
+- Creates a visual typing rhythm
+
+---
+
+## Technical Implementation Plan
+
+### 1. **HTML Structure**
+- Text input field for typing
+- Display area for dog photos
+- Optional: Show current word being used
+- Optional: Display current letter index
+
+### 2. **Dog Photo API/Data Source**
+- Use Dog API (https://dog.ceo/api/breeds/image/random) for random dog photos
+- OR use Unsplash API for dog photos
+- OR curate a set of dog photo URLs
+- Preload photos for smooth experience
+
+### 3. **Core Logic Flow**
+```
+1. User types initial word → store as "baseWord"
+2. Set letterIndex = 0
+3. On each keystroke:
+   - Get letter from baseWord[letterIndex % baseWord.length]
+   - Fetch/show dog photo (could be random or mapped to that letter)
+   - Increment letterIndex
+```
+
+### 4. **Features to Include**
+- ✅ Input field for typing
+- ✅ Dog photo display area
+- ✅ Show the word being used
+- ✅ Visual feedback for each letter typed
+- ✅ Optional: Letter counter
+- ✅ Optional: Reset/change word button
+
+### 5. **Styling Considerations**
+- Clean, minimal UI
+- Large photo display
+- Smooth transitions between photos
+- Mobile-friendly responsive design
+
+---
+
+## File Structure
+```
+/
+  - dog-typing-app.html (main app)
+  - styles.css (optional, can be inline)
+  - script.js (optional, can be inline)
+```
+
+---
+
+## Implementation Steps
+1. Create HTML structure with input and photo display
+2. Add event listener for keyboard input
+3. Implement letter cycling logic based on initial word
+4. Integrate dog photo API or image array
+5. Add visual transitions and animations
+6. Style the interface
+7. Test with different words
+8. Optional: Add word reset functionality
+
+---
+
+## Example User Flow
+1. User opens app → sees empty input field
+2. User types: "HAPPY" → word is captured
+3. User continues typing: "hello world"
+   - Types 'h' → shows dog photo for 'H' (1st letter of HAPPY)
+   - Types 'e' → shows dog photo for 'A' (2nd letter of HAPPY)
+   - Types 'l' → shows dog photo for 'P' (3rd letter of HAPPY)
+   - Types 'l' → shows dog photo for 'P' (4th letter of HAPPY)
+   - Types 'o' → shows dog photo for 'Y' (5th letter of HAPPY)
+   - Types space → shows dog photo for 'H' (wraps to 1st letter)
+   - And so on...
+
+---
+
+## Questions to Decide
+- Should the initial word be typed in a special input, or just the first word typed?
+- Should we ignore spaces and special characters, or include them in the cycle?
+- Do you want photos to be random or consistent (same letter = same photo)?
+- How long should each photo be displayed? (instant replacement or fade transition?)
+
+---
+
+Ready to implement? Let me know which approach you prefer and I'll build it!

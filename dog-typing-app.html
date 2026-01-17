@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Labradoodle Typing App</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: #000000;
+            color: #ffffff;
+            overflow: hidden;
+        }
+
+        /* Startup Screen */
+        #startupScreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            background: #000000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            transition: opacity 0.5s ease;
+        }
+
+        #startupScreen.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        #startupPrompt {
+            font-size: 2rem;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        #wordInput {
+            background: transparent;
+            border: 2px solid #ffffff;
+            color: #ffffff;
+            font-size: 1.5rem;
+            padding: 1rem 1.5rem;
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+            outline: none;
+            letter-spacing: 2px;
+        }
+
+        #wordInput::placeholder {
+            color: #666666;
+        }
+
+        #wordInput:focus {
+            border-color: #00ff41;
+            box-shadow: 0 0 20px rgba(0, 255, 65, 0.5);
+        }
+
+        #charCount {
+            margin-top: 1rem;
+            font-size: 0.9rem;
+            color: #888888;
+        }
+
+        /* Main Screen */
+        #mainScreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            background: #000000;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #mainScreen.active {
+            display: flex;
+        }
+
+        /* Labradoodle Image */
+        #labradoodleImage {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            max-width: 90vw;
+            max-height: 80vh;
+            width: auto;
+            height: auto;
+            border-radius: 15px;
+            border: 3px solid #ffffff;
+            box-shadow: 
+                0 0 30px rgba(255, 255, 255, 0.8),
+                0 0 60px rgba(255, 255, 255, 0.6);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease, transform 0.2s ease;
+            object-fit: contain;
+        }
+
+        #labradoodleImage.show {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1.05);
+        }
+
+        /* Letter Tally at Bottom */
+        #letterTally {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 1.2rem;
+            letter-spacing: 3px;
+            color: #ffffff;
+            text-align: center;
+            max-width: 90%;
+            word-break: break-all;
+            opacity: 0.7;
+            font-family: 'Courier New', monospace;
+        }
+
+        .tally-label {
+            font-size: 0.8rem;
+            color: #888888;
+            margin-bottom: 0.5rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        /* Hide audio element */
+        #barkSound {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- Startup Screen -->
+    <div id="startupScreen">
+        <div id="startupPrompt">Type a word</div>
+        <input 
+            type="text" 
+            id="wordInput" 
+            placeholder="Enter a word..."
+            maxlength="20"
+            autocomplete="off"
+            autofocus
+        />
+        <div id="charCount">0 / 20 characters</div>
+    </div>
+
+    <!-- Main Screen -->
+    <div id="mainScreen">
+        <img id="labradoodleImage" alt="Black Dog">
+        <audio id="barkSound" preload="auto"></audio>
+        <div id="letterTally">
+            <div class="tally-label">Typed Letters</div>
+            <div id="tallyContent"></div>
+        </div>
+    </div>
+
+    <script>
+        // Black dog images - curated list of black dog photos
+        const blackDogImages = [
+            'https://images.unsplash.com/photo-1583337130417-3346a1be7dee?w=800&h=800&fit=crop&q=80',
+            'https://images.unsplash.com/photo-1518717758536-85ae29035b6d?w=800&h=800&fit=crop&q=80',
+            'https://images.unsplash.com/photo-1505628346881-b72b27e84530?w=800&h=800&fit=crop&q=80',
+            'https://images.unsplash.com/photo-1601758228041-f3b2795255f1?w=800&h=800&fit=crop&q=80',
+            'https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=800&h=800&fit=crop&q=80',
+            'https://images.unsplash.com/photo-1551717743-49959800b1f6?w=800&h=800&fit=crop&q=80',
+            'https://images.unsplash.com/photo-1548199973-03cce0bbc87b?w=800&h=800&fit=crop&q=80',
+            'https://images.unsplash.com/photo-1601758228041-f3b2795255f1?w=800&h=800&fit=crop&q=80',
+            'https://images.unsplash.com/photo-1517849845537-4d257902454a?w=800&h=800&fit=crop&q=80',
+            'https://images.unsplash.com/photo-1552053831-71594a27632d?w=800&h=800&fit=crop&q=80'
+        ];
+
+        // Cow images - for every 20th photo
+        const cowImages = [
+            'https://images.unsplash.com/photo-1560114928-40f1f1eb26a0?w=800&h=800&fit=crop&q=80',
+            'https://images.unsplash.com/photo-1548550023-2bdb3c5beed7?w=800&h=800&fit=crop&q=80',
+            'https://images.unsplash.com/photo-1564760055775-d63b17a55c44?w=800&h=800&fit=crop&q=80',
+            'https://images.unsplash.com/photo-1516467508483-a7212febe31a?w=800&h=800&fit=crop&q=80',
+            'https://images.unsplash.com/photo-1564759224907-65b392f4c2b4?w=800&h=800&fit=crop&q=80'
+        ];
+
+        // State variables
+        let recordedWord = '';
+        let typedLetters = '';
+        const MAX_TALLY_LENGTH = 100;
+        const pressedKeys = new Set(); // Track which keys are currently pressed
+        let dogPhotoCount = 0; // Counter for dog photos
+        const COW_INTERVAL = 20; // Show cow every 20 dog photos
+
+        // DOM elements
+        const startupScreen = document.getElementById('startupScreen');
+        const mainScreen = document.getElementById('mainScreen');
+        const wordInput = document.getElementById('wordInput');
+        const charCount = document.getElementById('charCount');
+        const labradoodleImage = document.getElementById('labradoodleImage');
+        const tallyContent = document.getElementById('tallyContent');
+        const barkSound = document.getElementById('barkSound');
+
+        // Update character count
+        wordInput.addEventListener('input', () => {
+            const length = wordInput.value.length;
+            charCount.textContent = `${length} / 20 characters`;
+        });
+
+        // Handle word submission (Enter key or when input loses focus after typing)
+        wordInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && wordInput.value.trim().length > 0) {
+                e.preventDefault();
+                startMainApp();
+            }
+        });
+
+        // Alternative: Start when user stops typing (optional)
+        let inputTimeout;
+        wordInput.addEventListener('input', () => {
+            clearTimeout(inputTimeout);
+            inputTimeout = setTimeout(() => {
+                if (wordInput.value.trim().length > 0 && document.activeElement !== wordInput) {
+                    startMainApp();
+                }
+            }, 2000);
+        });
+
+        // Preload black dog images
+        function preloadImages() {
+            blackDogImages.forEach(src => {
+                const img = new Image();
+                img.src = src;
+            });
+            cowImages.forEach(src => {
+                const img = new Image();
+                img.src = src;
+            });
+        }
+
+        // Get a random black dog image
+        function getRandomBlackDogImage() {
+            return blackDogImages[Math.floor(Math.random() * blackDogImages.length)];
+        }
+
+        // Get a random cow image
+        function getRandomCowImage() {
+            return cowImages[Math.floor(Math.random() * cowImages.length)];
+        }
+
+        // Generate a simple bark sound using Web Audio API
+        function playBarkSound() {
+            try {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                
+                // Create a simple bark-like sound
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                // Create a "bark" sound with frequency modulation
+                oscillator.frequency.setValueAtTime(200, audioContext.currentTime);
+                oscillator.frequency.exponentialRampToValueAtTime(150, audioContext.currentTime + 0.1);
+                oscillator.frequency.exponentialRampToValueAtTime(300, audioContext.currentTime + 0.2);
+                oscillator.frequency.exponentialRampToValueAtTime(180, audioContext.currentTime + 0.3);
+                
+                gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+                
+                oscillator.type = 'sawtooth';
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.3);
+            } catch (err) {
+                // If Web Audio API fails, silently continue
+                console.log('Sound generation not available');
+            }
+        }
+
+        // Show cow photo (every 20th photo)
+        function showCow() {
+            labradoodleImage.src = getRandomCowImage();
+            labradoodleImage.classList.add('show');
+            // Play moo sound or reuse bark sound - you can add a cow sound if desired
+            playBarkSound(); // Using bark sound for now, but you can add a moo sound
+        }
+
+        // Show black dog photo
+        function showBlackDog() {
+            dogPhotoCount++;
+            
+            // Check if it's time to show a cow (every 20th photo)
+            if (dogPhotoCount % COW_INTERVAL === 0) {
+                showCow();
+            } else {
+                labradoodleImage.src = getRandomBlackDogImage();
+                labradoodleImage.classList.add('show');
+                playBarkSound();
+            }
+        }
+
+        // Hide black dog photo
+        function hideBlackDog() {
+            labradoodleImage.classList.remove('show');
+        }
+
+        // Update letter tally
+        function updateTally(letter) {
+            typedLetters += letter;
+            
+            // Keep only last 100 characters
+            if (typedLetters.length > MAX_TALLY_LENGTH) {
+                typedLetters = typedLetters.slice(-MAX_TALLY_LENGTH);
+            }
+            
+            tallyContent.textContent = typedLetters;
+        }
+
+        // Handle keydown events
+        function handleKeyDown(e) {
+            // Ignore if already processing this key
+            if (pressedKeys.has(e.key.toLowerCase())) {
+                return;
+            }
+
+            // Only handle letter keys (a-z)
+            const key = e.key.toLowerCase();
+            if (key.match(/[a-z]/)) {
+                // Check if the key matches any letter in the recorded word
+                const recordedWordLower = recordedWord.toLowerCase();
+                if (recordedWordLower.includes(key)) {
+                    pressedKeys.add(key);
+                    showBlackDog();
+                }
+                // Always update tally regardless of whether photo shows
+                updateTally(key.toUpperCase());
+            }
+        }
+
+        // Handle keyup events
+        function handleKeyUp(e) {
+            const key = e.key.toLowerCase();
+            if (pressedKeys.has(key)) {
+                pressedKeys.delete(key);
+                
+                // Hide image only if no keys are being pressed
+                if (pressedKeys.size === 0) {
+                    hideBlackDog();
+                }
+            }
+        }
+
+        // Start main app
+        function startMainApp() {
+            recordedWord = wordInput.value.trim();
+            
+            if (recordedWord.length === 0) {
+                return;
+            }
+
+            // Hide startup screen
+            startupScreen.classList.add('hidden');
+            
+            // Show main screen
+            setTimeout(() => {
+                startupScreen.style.display = 'none';
+                mainScreen.classList.add('active');
+                preloadImages();
+            }, 500);
+
+            // Set up keyboard listeners
+            document.addEventListener('keydown', handleKeyDown);
+            document.addEventListener('keyup', handleKeyUp);
+        }
+
+        // Initialize
+        preloadImages();
+    </script>
+</body>
+</html>
