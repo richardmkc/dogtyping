@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CyberPomodoro Timer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: #0a0a0a;
+            color: #00ff41;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+            position: relative;
+            transition: background-color 0.3s ease;
+        }
+
+        body.pink-flash {
+            background: #ff00ff;
+            animation: pinkFlash 0.5s ease-out;
+        }
+
+        @keyframes pinkFlash {
+            0% { background: #ff00ff; }
+            50% { background: #ff66ff; }
+            100% { background: #0a0a0a; }
+        }
+
+        /* Animated background grid */
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(0, 255, 65, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 255, 65, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: gridMove 20s linear infinite;
+            pointer-events: none;
+        }
+
+        @keyframes gridMove {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(50px, 50px); }
+        }
+
+        .container {
+            text-align: center;
+            z-index: 1;
+            padding: 40px;
+            border: 2px solid #00ff41;
+            border-radius: 10px;
+            box-shadow: 
+                0 0 20px rgba(0, 255, 65, 0.5),
+                inset 0 0 20px rgba(0, 255, 65, 0.1);
+            background: rgba(10, 10, 10, 0.9);
+            backdrop-filter: blur(10px);
+            position: relative;
+        }
+
+        .container::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(45deg, #00ff41, #00cc33, #00ff41);
+            border-radius: 10px;
+            z-index: -1;
+            opacity: 0.3;
+            animation: borderGlow 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes borderGlow {
+            0% { opacity: 0.3; }
+            100% { opacity: 0.6; }
+        }
+
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 30px;
+            text-transform: uppercase;
+            letter-spacing: 5px;
+            text-shadow: 0 0 10px rgba(0, 255, 65, 0.8);
+            animation: titlePulse 2s ease-in-out infinite;
+        }
+
+        @keyframes titlePulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .timer-display {
+            font-size: 6rem;
+            font-weight: bold;
+            margin: 40px 0;
+            text-shadow: 
+                0 0 10px rgba(0, 255, 65, 0.8),
+                0 0 20px rgba(0, 255, 65, 0.6),
+                0 0 30px rgba(0, 255, 65, 0.4);
+            letter-spacing: 10px;
+            font-variant-numeric: tabular-nums;
+            transition: all 0.3s ease;
+        }
+
+        .timer-display.running {
+            animation: timerPulse 1s ease-in-out infinite;
+        }
+
+        @keyframes timerPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+        }
+
+        .controls {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-top: 40px;
+        }
+
+        button {
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            background: transparent;
+            color: #00ff41;
+            border: 2px solid #00ff41;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 0 10px rgba(0, 255, 65, 0.3);
+        }
+
+        button::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(0, 255, 65, 0.2);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        button:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        button:hover {
+            background: rgba(0, 255, 65, 0.1);
+            box-shadow: 
+                0 0 20px rgba(0, 255, 65, 0.6),
+                inset 0 0 20px rgba(0, 255, 65, 0.1);
+            transform: translateY(-2px);
+        }
+
+        button:active {
+            transform: translateY(0);
+            box-shadow: 0 0 10px rgba(0, 255, 65, 0.4);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        button:disabled:hover {
+            background: transparent;
+            box-shadow: 0 0 10px rgba(0, 255, 65, 0.3);
+            transform: none;
+        }
+
+        .status {
+            margin-top: 20px;
+            font-size: 0.9rem;
+            letter-spacing: 3px;
+            opacity: 0.8;
+            text-transform: uppercase;
+        }
+
+        .labradoodle-image {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.8);
+            max-width: 90vw;
+            max-height: 90vh;
+            width: auto;
+            height: auto;
+            border-radius: 15px;
+            border: 3px solid #ff00ff;
+            box-shadow: 
+                0 0 30px rgba(255, 0, 255, 0.8),
+                0 0 60px rgba(255, 0, 255, 0.6);
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            object-fit: contain;
+        }
+
+        .labradoodle-image.show {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+            animation: labradoodlePop 0.5s ease-out;
+        }
+
+        @keyframes labradoodlePop {
+            0% {
+                transform: translate(-50%, -50%) scale(0.5);
+                opacity: 0;
+            }
+            50% {
+                transform: translate(-50%, -50%) scale(1.1);
+            }
+            100% {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <img id="labradoodleImage" class="labradoodle-image" alt="Labradoodle">
+    <div class="container">
+        <h1>CyberPomodoro</h1>
+        <div class="timer-display" id="timerDisplay">25:00</div>
+        <div class="controls">
+            <button id="startBtn">Start</button>
+            <button id="pauseBtn">Pause</button>
+            <button id="resetBtn">Reset</button>
+        </div>
+        <div class="status" id="status">Ready</div>
+    </div>
+
+    <script>
+        class PomodoroTimer {
+            constructor() {
+                this.totalSeconds = 25 * 60; // 25 minutes
+                this.remainingSeconds = this.totalSeconds;
+                this.isRunning = false;
+                this.intervalId = null;
+                
+                this.timerDisplay = document.getElementById('timerDisplay');
+                this.startBtn = document.getElementById('startBtn');
+                this.pauseBtn = document.getElementById('pauseBtn');
+                this.resetBtn = document.getElementById('resetBtn');
+                this.status = document.getElementById('status');
+                
+                this.initializeEventListeners();
+                this.updateDisplay();
+            }
+
+            initializeEventListeners() {
+                this.startBtn.addEventListener('click', () => this.start());
+                this.pauseBtn.addEventListener('click', () => this.pause());
+                this.resetBtn.addEventListener('click', () => this.reset());
+            }
+
+            formatTime(seconds) {
+                const mins = Math.floor(seconds / 60);
+                const secs = seconds % 60;
+                return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+            }
+
+            updateDisplay() {
+                this.timerDisplay.textContent = this.formatTime(this.remainingSeconds);
+                
+                if (this.isRunning) {
+                    this.timerDisplay.classList.add('running');
+                } else {
+                    this.timerDisplay.classList.remove('running');
+                }
+            }
+
+            start() {
+                if (this.remainingSeconds === 0) {
+                    this.reset();
+                }
+                
+                if (!this.isRunning) {
+                    this.isRunning = true;
+                    this.status.textContent = 'Running';
+                    
+                    this.intervalId = setInterval(() => {
+                        this.remainingSeconds--;
+                        this.updateDisplay();
+                        
+                        if (this.remainingSeconds <= 0) {
+                            this.complete();
+                        }
+                    }, 1000);
+                }
+            }
+
+            pause() {
+                if (this.isRunning) {
+                    this.isRunning = false;
+                    this.status.textContent = 'Paused';
+                    clearInterval(this.intervalId);
+                    this.intervalId = null;
+                }
+            }
+
+            reset() {
+                this.isRunning = false;
+                this.remainingSeconds = this.totalSeconds;
+                this.status.textContent = 'Ready';
+                clearInterval(this.intervalId);
+                this.intervalId = null;
+                this.updateDisplay();
+            }
+
+            complete() {
+                this.isRunning = false;
+                this.remainingSeconds = 0;
+                this.status.textContent = 'Complete!';
+                clearInterval(this.intervalId);
+                this.intervalId = null;
+                this.updateDisplay();
+                
+                // Play alert sound
+                this.playAlertSound();
+            }
+
+            playAlertSound() {
+                // Create audio context for browser alert sound
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                
+                // Create a beep sound using Web Audio API
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.frequency.value = 800; // Frequency in Hz
+                oscillator.type = 'sine';
+                
+                gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+                
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.5);
+                
+                // Play two more beeps after a short delay
+                setTimeout(() => {
+                    const oscillator2 = audioContext.createOscillator();
+                    const gainNode2 = audioContext.createGain();
+                    
+                    oscillator2.connect(gainNode2);
+                    gainNode2.connect(audioContext.destination);
+                    
+                    oscillator2.frequency.value = 800;
+                    oscillator2.type = 'sine';
+                    
+                    gainNode2.gain.setValueAtTime(0.3, audioContext.currentTime);
+                    gainNode2.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+                    
+                    oscillator2.start(audioContext.currentTime);
+                    oscillator2.stop(audioContext.currentTime + 0.5);
+                }, 600);
+                
+                setTimeout(() => {
+                    const oscillator3 = audioContext.createOscillator();
+                    const gainNode3 = audioContext.createGain();
+                    
+                    oscillator3.connect(gainNode3);
+                    gainNode3.connect(audioContext.destination);
+                    
+                    oscillator3.frequency.value = 1000;
+                    oscillator3.type = 'sine';
+                    
+                    gainNode3.gain.setValueAtTime(0.3, audioContext.currentTime);
+                    gainNode3.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+                    
+                    oscillator3.start(audioContext.currentTime);
+                    oscillator3.stop(audioContext.currentTime + 0.5);
+                }, 1200);
+            }
+        }
+
+        // Labradoodle images - curated list of various labradoodle photos
+        const labradoodleImages = [
+            'https://images.unsplash.com/photo-1552053831-71594a27632d?w=800&h=800&fit=crop&q=80',
+            'https://images.unsplash.com/photo-1583337130417-3346a1be7dee?w=800&h=800&fit=crop&q=80',
+            'https://images.unsplash.com/photo-1517849845537-4d257902454a?w=800&h=800&fit=crop&q=80',
+            'https://images.unsplash.com/photo-1534361960057-19889c9383e8?w=800&h=800&fit=crop&q=80',
+            'https://images.unsplash.com/photo-1548199973-03cce0bbc87b?w=800&h=800&fit=crop&q=80',
+            'https://images.unsplash.com/photo-1518717758536-85ae29035b6d?w=800&h=800&fit=crop&q=80',
+            'https://images.unsplash.com/photo-1505628346881-b72b27e84530?w=800&h=800&fit=crop&q=80',
+            'https://images.unsplash.com/photo-1551717743-49959800b1f6?w=800&h=800&fit=crop&q=80',
+            'https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=800&h=800&fit=crop&q=80',
+            'https://images.unsplash.com/photo-1601758228041-f3b2795255f1?w=800&h=800&fit=crop&q=80'
+        ];
+
+        // Preload images for instant display
+        function preloadLabradoodleImages() {
+            labradoodleImages.forEach(src => {
+                const img = new Image();
+                img.src = src;
+            });
+        }
+
+        // Pink flash functionality with labradoodle images
+        function triggerPinkFlash() {
+            const labradoodleImg = document.getElementById('labradoodleImage');
+            
+            // Select a random labradoodle image
+            const randomImage = labradoodleImages[Math.floor(Math.random() * labradoodleImages.length)];
+            labradoodleImg.src = randomImage;
+            
+            // Show the image and trigger pink flash
+            document.body.classList.add('pink-flash');
+            labradoodleImg.classList.add('show');
+            
+            // Hide after flash animation
+            setTimeout(() => {
+                document.body.classList.remove('pink-flash');
+                labradoodleImg.classList.remove('show');
+            }, 500);
+        }
+
+        function scheduleNextFlash() {
+            const randomDelay = Math.random() * (10000 - 3000) + 3000; // Random between 3-10 seconds
+            setTimeout(() => {
+                triggerPinkFlash();
+                scheduleNextFlash(); // Schedule the next flash
+            }, randomDelay);
+        }
+
+        // Initialize timer when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new PomodoroTimer();
+            preloadLabradoodleImages(); // Preload images for instant display
+            scheduleNextFlash(); // Start the random pink flash cycle
+        });
+    </script>
+</body>
+</html>
