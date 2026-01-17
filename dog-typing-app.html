@@ -165,7 +165,11 @@
     <!-- Main Screen -->
     <div id="mainScreen">
         <img id="labradoodleImage" alt="Black Dog">
-        <audio id="barkSound" preload="auto"></audio>
+        <audio id="barkSound" preload="auto">
+            <!-- Put your bark sound file in the /audio folder and name it bark.mp3 or bark.wav -->
+            <source src="audio/bark.mp3" type="audio/mpeg">
+            <source src="audio/bark.wav" type="audio/wav">
+        </audio>
         <div id="letterTally">
             <div class="tally-label">Typed Letters</div>
             <div id="tallyContent"></div>
@@ -173,27 +177,29 @@
     </div>
 
     <script>
-        // Black dog images - curated list of black dog photos
+        // Black dog images - put your black dog photos in the /images folder
+        // Name them: dog1.jpg, dog2.jpg, dog3.jpg, etc. (or use .png)
         const blackDogImages = [
-            'https://images.unsplash.com/photo-1583337130417-3346a1be7dee?w=800&h=800&fit=crop&q=80',
-            'https://images.unsplash.com/photo-1518717758536-85ae29035b6d?w=800&h=800&fit=crop&q=80',
-            'https://images.unsplash.com/photo-1505628346881-b72b27e84530?w=800&h=800&fit=crop&q=80',
-            'https://images.unsplash.com/photo-1601758228041-f3b2795255f1?w=800&h=800&fit=crop&q=80',
-            'https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=800&h=800&fit=crop&q=80',
-            'https://images.unsplash.com/photo-1551717743-49959800b1f6?w=800&h=800&fit=crop&q=80',
-            'https://images.unsplash.com/photo-1548199973-03cce0bbc87b?w=800&h=800&fit=crop&q=80',
-            'https://images.unsplash.com/photo-1601758228041-f3b2795255f1?w=800&h=800&fit=crop&q=80',
-            'https://images.unsplash.com/photo-1517849845537-4d257902454a?w=800&h=800&fit=crop&q=80',
-            'https://images.unsplash.com/photo-1552053831-71594a27632d?w=800&h=800&fit=crop&q=80'
+            'images/dog1.jpg',
+            'images/dog2.jpg',
+            'images/dog3.jpg',
+            'images/dog4.jpg',
+            'images/dog5.jpg',
+            'images/dog6.jpg',
+            'images/dog7.jpg',
+            'images/dog8.jpg',
+            'images/dog9.jpg',
+            'images/dog10.jpg'
         ];
 
-        // Cow images - for every 20th photo
+        // Cow images - put your cow photos in the /images folder
+        // Name them: cow1.jpg, cow2.jpg, cow3.jpg, etc. (or use .png)
         const cowImages = [
-            'https://images.unsplash.com/photo-1560114928-40f1f1eb26a0?w=800&h=800&fit=crop&q=80',
-            'https://images.unsplash.com/photo-1548550023-2bdb3c5beed7?w=800&h=800&fit=crop&q=80',
-            'https://images.unsplash.com/photo-1564760055775-d63b17a55c44?w=800&h=800&fit=crop&q=80',
-            'https://images.unsplash.com/photo-1516467508483-a7212febe31a?w=800&h=800&fit=crop&q=80',
-            'https://images.unsplash.com/photo-1564759224907-65b392f4c2b4?w=800&h=800&fit=crop&q=80'
+            'images/cow1.jpg',
+            'images/cow2.jpg',
+            'images/cow3.jpg',
+            'images/cow4.jpg',
+            'images/cow5.jpg'
         ];
 
         // State variables
@@ -260,19 +266,29 @@
             return cowImages[Math.floor(Math.random() * cowImages.length)];
         }
 
-        // Generate a simple bark sound using Web Audio API
+        // Play barking sound from audio file
         function playBarkSound() {
+            if (barkSound) {
+                barkSound.currentTime = 0; // Reset to start
+                barkSound.play().catch(err => {
+                    // If audio file doesn't exist or autoplay is blocked, fall back to generated sound
+                    console.log('Audio file not available, using fallback');
+                    generateFallbackBarkSound();
+                });
+            }
+        }
+
+        // Fallback: Generate a simple bark sound using Web Audio API if audio file is missing
+        function generateFallbackBarkSound() {
             try {
                 const audioContext = new (window.AudioContext || window.webkitAudioContext)();
                 
-                // Create a simple bark-like sound
                 const oscillator = audioContext.createOscillator();
                 const gainNode = audioContext.createGain();
                 
                 oscillator.connect(gainNode);
                 gainNode.connect(audioContext.destination);
                 
-                // Create a "bark" sound with frequency modulation
                 oscillator.frequency.setValueAtTime(200, audioContext.currentTime);
                 oscillator.frequency.exponentialRampToValueAtTime(150, audioContext.currentTime + 0.1);
                 oscillator.frequency.exponentialRampToValueAtTime(300, audioContext.currentTime + 0.2);
@@ -285,7 +301,6 @@
                 oscillator.start(audioContext.currentTime);
                 oscillator.stop(audioContext.currentTime + 0.3);
             } catch (err) {
-                // If Web Audio API fails, silently continue
                 console.log('Sound generation not available');
             }
         }
