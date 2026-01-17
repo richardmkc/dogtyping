@@ -166,7 +166,8 @@
     <div id="mainScreen">
         <img id="labradoodleImage" alt="Black Dog">
         <audio id="barkSound" preload="auto">
-            <!-- Put your bark sound file in the /audio folder and name it bark.mp3 or bark.wav -->
+            <!-- Using your actual bark sound file -->
+            <source src="audio/bark.mp3.m4a" type="audio/mp4">
             <source src="audio/bark.mp3" type="audio/mpeg">
             <source src="audio/bark.wav" type="audio/wav">
         </audio>
@@ -177,8 +178,7 @@
     </div>
 
     <script>
-        // Black dog images - put your black dog photos in the /images folder
-        // Name them: dog1.jpg, dog2.jpg, dog3.jpg, etc. (or use .png)
+        // Black dog images - using your actual files
         const blackDogImages = [
             'images/dog1.jpg',
             'images/dog2.jpg',
@@ -189,17 +189,16 @@
             'images/dog7.jpg',
             'images/dog8.jpg',
             'images/dog9.jpg',
-            'images/dog10.jpg'
+            'images/dog10.jpg',
+            'images/dog11.jpg'
         ];
 
-        // Cow images - put your cow photos in the /images folder
-        // Name them: cow1.jpg, cow2.jpg, cow3.jpg, etc. (or use .png)
+        // Cow images - using your actual files
         const cowImages = [
             'images/cow1.jpg',
             'images/cow2.jpg',
             'images/cow3.jpg',
-            'images/cow4.jpg',
-            'images/cow5.jpg'
+            'images/cow4.jpg'
         ];
 
         // State variables
@@ -219,13 +218,48 @@
         const tallyContent = document.getElementById('tallyContent');
         const barkSound = document.getElementById('barkSound');
 
-        // Update character count
-        wordInput.addEventListener('input', () => {
+        // Filter input to only A-Z characters
+        function filterToLettersOnly(text) {
+            return text.replace(/[^A-Za-z]/g, '').toUpperCase();
+        }
+
+        // Update character count and filter input
+        wordInput.addEventListener('input', (e) => {
+            const filtered = filterToLettersOnly(wordInput.value);
+            if (wordInput.value !== filtered) {
+                wordInput.value = filtered;
+            }
             const length = wordInput.value.length;
             charCount.textContent = `${length} / 20 characters`;
         });
 
-        // Handle word submission (Enter key or when input loses focus after typing)
+        // Prevent non-letter keys in word input
+        wordInput.addEventListener('keydown', (e) => {
+            // Allow: backspace, delete, tab, enter, arrow keys, etc.
+            const allowedKeys = ['Backspace', 'Delete', 'Tab', 'Enter', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'];
+            
+            if (allowedKeys.includes(e.key)) {
+                return; // Allow these keys
+            }
+            
+            // Only allow A-Z letters
+            if (!/^[A-Za-z]$/.test(e.key)) {
+                e.preventDefault(); // Block all other keys
+                return false;
+            }
+        });
+
+        // Handle paste - filter out non-letters
+        wordInput.addEventListener('paste', (e) => {
+            e.preventDefault();
+            const pasted = (e.clipboardData || window.clipboardData).getData('text');
+            const filtered = filterToLettersOnly(pasted);
+            wordInput.value = filtered.substring(0, 20); // Limit to 20 chars
+            const length = wordInput.value.length;
+            charCount.textContent = `${length} / 20 characters`;
+        });
+
+        // Handle word submission (Enter key)
         wordInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && wordInput.value.trim().length > 0) {
                 e.preventDefault();
@@ -351,9 +385,9 @@
                 return;
             }
 
-            // Only handle letter keys (a-z)
+            // Only handle letter keys A-Z (block all special characters, numbers, etc.)
             const key = e.key.toLowerCase();
-            if (key.match(/[a-z]/)) {
+            if (key.match(/^[a-z]$/)) {
                 // Check if the key matches any letter in the recorded word
                 const recordedWordLower = recordedWord.toLowerCase();
                 if (recordedWordLower.includes(key)) {
@@ -380,7 +414,8 @@
 
         // Start main app
         function startMainApp() {
-            recordedWord = wordInput.value.trim();
+            // Ensure only A-Z letters in recorded word
+            recordedWord = filterToLettersOnly(wordInput.value.trim());
             
             if (recordedWord.length === 0) {
                 return;
