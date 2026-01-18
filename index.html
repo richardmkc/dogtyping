@@ -146,25 +146,25 @@
             display: none;
         }
 
-        /* Cow countdown counter - bottom left */
+        /* Cow countdown counter - top right */
         #cowCountdown {
             position: fixed;
-            bottom: 20px;
-            left: 20px;
-            font-size: 2rem;
+            top: 20px;
+            right: 20px;
+            font-size: 4rem;
             font-weight: bold;
-            color: #ffffff;
+            color: #ff0000;
             font-family: 'Courier New', monospace;
             opacity: 0;
             transition: opacity 0.3s ease;
-            text-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+            text-shadow: 0 0 10px rgba(255, 0, 0, 0.8);
         }
 
         #cowCountdown.show {
             opacity: 1;
         }
 
-        /* On-screen keyboard container - bottom */
+        /* On-screen keyboard container - bottom, 80% scale */
         #keyboardContainer {
             position: fixed;
             bottom: 0;
@@ -178,6 +178,8 @@
             border-top: 2px solid rgba(255, 255, 255, 0.3);
             box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.5);
             z-index: 100;
+            transform: scale(0.8);
+            transform-origin: bottom center;
         }
 
         .keyboard-row {
