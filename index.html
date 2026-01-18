@@ -163,6 +163,86 @@
         #cowCountdown.show {
             opacity: 1;
         }
+
+        /* On-screen keyboard container - bottom */
+        #keyboardContainer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            padding: 15px 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            border-top: 2px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.5);
+            z-index: 100;
+        }
+
+        .keyboard-row {
+            display: flex;
+            justify-content: center;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .keyboard-key {
+            min-width: 40px;
+            height: 50px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: #ffffff;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Courier New', monospace;
+            transition: all 0.2s ease;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            flex: 1;
+            max-width: 60px;
+        }
+
+        .keyboard-key:active {
+            background: rgba(0, 255, 65, 0.3);
+            border-color: #00ff41;
+            transform: scale(0.95);
+            box-shadow: 0 0 15px rgba(0, 255, 65, 0.5);
+        }
+
+        .keyboard-key:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+
+        /* Highlight keys that match the recorded word */
+        .keyboard-key.matching {
+            background: rgba(0, 255, 65, 0.2);
+            border-color: #00ff41;
+        }
+
+        .keyboard-key.matching:active {
+            background: rgba(0, 255, 65, 0.5);
+        }
+
+        @media (max-width: 768px) {
+            .keyboard-key {
+                min-width: 35px;
+                height: 45px;
+                font-size: 1rem;
+                max-width: 50px;
+            }
+            
+            /* Adjust tally position on mobile to make room for keyboard */
+            #letterTally {
+                bottom: 180px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -200,6 +280,12 @@
             <div class="tally-label">Typed Letters</div>
             <div id="tallyContent"></div>
         </div>
+        <!-- On-screen keyboard for letter input -->
+        <div id="keyboardContainer">
+            <div id="keyboardRow1" class="keyboard-row"></div>
+            <div id="keyboardRow2" class="keyboard-row"></div>
+            <div id="keyboardRow3" class="keyboard-row"></div>
+        </div>
     </div>
 
     <script>
@@ -235,6 +321,7 @@
         const COW_INTERVAL = 20; // Show cow every 20 dog photos
         let isCowShowing = false; // Track if cow is currently showing
         let cowHideTimeout = null; // Timeout for hiding cow after 3 seconds
+        let keyboardInitialized = false; // Prevent duplicate keyboard creation
 
         // DOM elements
         const startupScreen = document.getElementById('startupScreen');
@@ -246,6 +333,7 @@
         const barkSound = document.getElementById('barkSound');
         const mooSound = document.getElementById('mooSound');
         const cowCountdown = document.getElementById('cowCountdown');
+        // Get keyboard rows dynamically in setupMobileInput to ensure DOM is ready
 
         // Filter input to only A-Z characters
         function filterToLettersOnly(text) {
@@ -510,6 +598,12 @@
                 startupScreen.style.display = 'none';
                 mainScreen.classList.add('active');
                 preloadImages();
+                
+                // Set up on-screen keyboard AFTER main screen is visible
+                setupMobileInput();
+                
+                // Update keyboard highlighting to show which keys match the word
+                updateKeyboardHighlighting();
             }, 500);
 
             // Set up keyboard listeners
@@ -517,10 +611,122 @@
             document.addEventListener('keyup', handleKeyUp);
         }
 
+        // Setup on-screen keyboard
+        function setupMobileInput() {
+            // Prevent duplicate keyboard creation
+            if (keyboardInitialized) {
+                return;
+            }
+            
+            // Get keyboard row elements (get them fresh each time to ensure DOM is ready)
+            const keyboardRow1 = document.getElementById('keyboardRow1');
+            const keyboardRow2 = document.getElementById('keyboardRow2');
+            const keyboardRow3 = document.getElementById('keyboardRow3');
+            
+            // Check if elements exist
+            if (!keyboardRow1 || !keyboardRow2 || !keyboardRow3) {
+                console.error('Keyboard row elements not found!');
+                return;
+            }
+            
+            // Clear any existing keys first to prevent duplicates
+            keyboardRow1.innerHTML = '';
+            keyboardRow2.innerHTML = '';
+            keyboardRow3.innerHTML = '';
+            
+            // Create keyboard layout: QWERTY style
+            const row1Letters = ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'];
+            const row2Letters = ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'];
+            const row3Letters = ['Z', 'X', 'C', 'V', 'B', 'N', 'M'];
+            
+            // Create keys for row 1
+            row1Letters.forEach(letter => {
+                const key = createKeyboardKey(letter);
+                keyboardRow1.appendChild(key);
+            });
+            
+            // Create keys for row 2
+            row2Letters.forEach(letter => {
+                const key = createKeyboardKey(letter);
+                keyboardRow2.appendChild(key);
+            });
+            
+            // Create keys for row 3
+            row3Letters.forEach(letter => {
+                const key = createKeyboardKey(letter);
+                keyboardRow3.appendChild(key);
+            });
+            
+            // Update key highlighting based on recorded word
+            updateKeyboardHighlighting();
+            
+            // Mark keyboard as initialized
+            keyboardInitialized = true;
+        }
+        
+        // Create a keyboard key button
+        function createKeyboardKey(letter) {
+            const key = document.createElement('div');
+            key.className = 'keyboard-key';
+            key.textContent = letter;
+            
+            // Check if this letter matches the recorded word
+            const recordedWordLower = recordedWord.toLowerCase();
+            if (recordedWordLower.includes(letter.toLowerCase())) {
+                key.classList.add('matching');
+            }
+            
+            // Add click/touch handler
+            key.addEventListener('click', () => handleKeyboardKeyPress(letter));
+            key.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                handleKeyboardKeyPress(letter);
+            });
+            
+            return key;
+        }
+        
+        // Handle keyboard key press
+        function handleKeyboardKeyPress(letter) {
+            const letterLower = letter.toLowerCase();
+            
+            // Check if the letter matches any letter in the recorded word
+            const recordedWordLower = recordedWord.toLowerCase();
+            if (recordedWordLower.includes(letterLower)) {
+                // Trigger showBlackDog for matching letter
+                showBlackDog();
+            }
+            
+            // Always update tally
+            updateTally(letter.toUpperCase());
+            
+            // Show photo briefly (1 second if not cow)
+            if (!isCowShowing) {
+                setTimeout(() => {
+                    if (pressedKeys.size === 0 && !isCowShowing) {
+                        hideBlackDog();
+                    }
+                }, 1000);
+            }
+        }
+        
+        // Update keyboard highlighting to show which keys match the word
+        function updateKeyboardHighlighting() {
+            const recordedWordLower = recordedWord.toLowerCase();
+            const keys = document.querySelectorAll('.keyboard-key');
+            
+            keys.forEach(key => {
+                const letter = key.textContent.toLowerCase();
+                if (recordedWordLower.includes(letter)) {
+                    key.classList.add('matching');
+                } else {
+                    key.classList.remove('matching');
+                }
+            });
+        }
+
         // Initialize
         preloadImages();
     </script>
 </body>
 </html>
-
-   
