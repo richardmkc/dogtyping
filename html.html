@@ -333,9 +333,7 @@
         const barkSound = document.getElementById('barkSound');
         const mooSound = document.getElementById('mooSound');
         const cowCountdown = document.getElementById('cowCountdown');
-        const keyboardRow1 = document.getElementById('keyboardRow1');
-        const keyboardRow2 = document.getElementById('keyboardRow2');
-        const keyboardRow3 = document.getElementById('keyboardRow3');
+        // Get keyboard rows dynamically in setupMobileInput to ensure DOM is ready
 
         // Filter input to only A-Z characters
         function filterToLettersOnly(text) {
@@ -600,17 +598,17 @@
                 startupScreen.style.display = 'none';
                 mainScreen.classList.add('active');
                 preloadImages();
+                
+                // Set up on-screen keyboard AFTER main screen is visible
+                setupMobileInput();
+                
+                // Update keyboard highlighting to show which keys match the word
+                updateKeyboardHighlighting();
             }, 500);
 
             // Set up keyboard listeners
             document.addEventListener('keydown', handleKeyDown);
             document.addEventListener('keyup', handleKeyUp);
-
-            // Set up on-screen keyboard
-            setupMobileInput();
-            
-            // Update keyboard highlighting to show which keys match the word
-            updateKeyboardHighlighting();
         }
 
         // Setup on-screen keyboard
@@ -620,10 +618,21 @@
                 return;
             }
             
+            // Get keyboard row elements (get them fresh each time to ensure DOM is ready)
+            const keyboardRow1 = document.getElementById('keyboardRow1');
+            const keyboardRow2 = document.getElementById('keyboardRow2');
+            const keyboardRow3 = document.getElementById('keyboardRow3');
+            
+            // Check if elements exist
+            if (!keyboardRow1 || !keyboardRow2 || !keyboardRow3) {
+                console.error('Keyboard row elements not found!');
+                return;
+            }
+            
             // Clear any existing keys first to prevent duplicates
-            if (keyboardRow1) keyboardRow1.innerHTML = '';
-            if (keyboardRow2) keyboardRow2.innerHTML = '';
-            if (keyboardRow3) keyboardRow3.innerHTML = '';
+            keyboardRow1.innerHTML = '';
+            keyboardRow2.innerHTML = '';
+            keyboardRow3.innerHTML = '';
             
             // Create keyboard layout: QWERTY style
             const row1Letters = ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'];
